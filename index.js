@@ -6,6 +6,7 @@ const client = new Client({
 
 const TOKEN = process.env.TOKEN;
 const PREFIX = "&";
+const port = process.env.PORT || 4000;
 
 client.once('ready', async () => {
   console.log(`${client.user.tag} is online!`);
