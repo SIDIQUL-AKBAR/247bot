@@ -1,15 +1,30 @@
-const { Client, GatewayIntentBits } = require('discord.js');
+const {
+  Client,
+  GatewayIntentBits
+} = require('discord.js');
+
+const {
+  joinVoiceChannel,
+  getVoiceConnection
+} = require('@discordjs/voice');
+
+const http = require('http');
 
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates]
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+    GatewayIntentBits.GuildVoiceStates
+  ]
 });
 
 const TOKEN = process.env.TOKEN;
+const PORT = process.env.PORT || 4000;
 const PREFIX = "&";
-const port = process.env.PORT || 4000;
 
-client.once('ready', async () => {
-  console.log(`${client.user.tag} is online!`);
+client.once('ready', () => {
+  console.log(`${client.user.tag} is online`);
 });
 
 client.on('messageCreate', async (message) => {
@@ -19,47 +34,51 @@ client.on('messageCreate', async (message) => {
   const args = message.content.slice(PREFIX.length).trim().split(/ +/);
   const command = args.shift().toLowerCase();
 
-  // JOIN COMMAND
+  // JOIN VC
   if (command === 'join') {
-    if (!message.member.voice.channel) {
-      return message.reply('Join a VC first.');
+
+    const voiceChannel = message.member.voice.channel;
+
+    if (!voiceChannel) {
+      return message.reply('Join a voice channel first.');
     }
 
-    const channel = message.member.voice.channel;
-
     try {
-      await channel.join();
-      message.reply('Joined the VC.');
+
+      joinVoiceChannel({
+        channelId: voiceChannel.id,
+        guildId: voiceChannel.guild.id,
+        adapterCreator: voiceChannel.guild.voiceAdapterCreator,
+        selfDeaf: false
+      });
+
+      message.reply('Joined the voice channel.');
+
     } catch (err) {
       console.error(err);
       message.reply('Failed to join VC.');
     }
   }
 
-  // LEAVE COMMAND
+  // LEAVE VC
   if (command === 'leave') {
-    const connection = message.guild.members.me.voice.channel;
+
+    const connection = getVoiceConnection(message.guild.id);
 
     if (!connection) {
-      return message.reply('I am not in VC.');
+      return message.reply('I am not in a VC.');
     }
 
-    try {
-      connection.leave();
-      message.reply('Left the VC.');
-    } catch (err) {
-      console.error(err);
-      message.reply('Failed to leave VC.');
-    }
+    connection.destroy();
+
+    message.reply('Left the voice channel.');
   }
+
 });
 
+http.createServer((req, res) => {
+  res.writeHead(200);
+  res.end('Bot is running.');
+}).listen(PORT);
+
 client.login(TOKEN);
-require('http')
-  .createServer((req, res) => {
-    res.writeHead(200);
-    res.end('24/7 Bot Running');
-  })
-  .listen(port, () => {
-    console.log(`Server running on port ${port}`);
-  });
