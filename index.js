@@ -55,3 +55,11 @@ client.on('messageCreate', async (message) => {
 });
 
 client.login(TOKEN);
+require('http')
+  .createServer((req, res) => {
+    res.writeHead(200);
+    res.end('24/7 Bot Running');
+  })
+  .listen(port, () => {
+    console.log(`Server running on port ${port}`);
+  });
